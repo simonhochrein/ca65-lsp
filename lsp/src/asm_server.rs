@@ -17,11 +17,7 @@ use std::time::Duration;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use tokio::time;
-use tower_lsp::lsp_types::{
-    CompletionItem, CompletionItemKind, CompletionParams, CompletionResponse, Diagnostic,
-    DiagnosticSeverity, DocumentSymbolParams, DocumentSymbolResponse, HoverContents,
-    InsertTextFormat, MarkupContent, MarkupKind, MessageType, OneOf, SymbolInformation,
-};
+use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind, CompletionParams, CompletionResponse, Diagnostic, DiagnosticSeverity, DocumentSymbolParams, DocumentSymbolResponse, Documentation, HoverContents, InsertTextFormat, MarkupContent, MarkupKind, MessageType, OneOf, SymbolInformation};
 use tower_lsp::{
     jsonrpc::Result,
     lsp_types::{
@@ -357,6 +353,19 @@ impl LanguageServer for Asm {
 
     async fn completion(&self, _params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let mut completion_items: Vec<CompletionItem> = vec![];
+
+        // for (opcode, description) in OPCODE_DOCUMENTATION.get().unwrap().iter() {
+        //     completion_items.push(CompletionItem {
+        //         label: opcode.clone(),
+        //         kind: Some(CompletionItemKind::FUNCTION),
+        //         documentation: Some(Documentation::MarkupContent(MarkupContent {
+        //             kind: MarkupKind::Markdown,
+        //             value: description.clone()
+        //         })),
+        //         ..Default::default()
+        //     });
+        // }
+
         for (opcode, description) in instructions::INSTRUCTION_MAP
             .get()
             .expect("Instructions not loaded")
