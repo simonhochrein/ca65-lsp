@@ -5,7 +5,7 @@ use crate::symbol_cache::{
 };
 use crate::{instructions};
 use analysis::ScopeKind;
-use crate::documentation::{CA65_DOC, INSTRUCTION_DOC};
+use crate::documentation::{CA65_DOC, OPCODE_DOC};
 use lazy_static::lazy_static;
 use parser::instructions::Instructions;
 use parser::ParseError;
@@ -283,7 +283,7 @@ impl LanguageServer for Asm {
                 .get_word_at_position(position)
                 .expect("Word out of bounds");
 
-            if let Some(documentation) = INSTRUCTION_DOC
+            if let Some(documentation) = OPCODE_DOC
                 .get()
                 .unwrap()
                 .get_doc_for_word(&word.to_lowercase())
