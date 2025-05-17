@@ -130,6 +130,22 @@ pub struct Instruction {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum IfKind {
+    Regular(Expression),
+    Blank(Vec<Token>),
+    NotBlank(Vec<Token>),
+    Defined(Vec<Token>),
+    NotDefined(Vec<Token>),
+    Referenced(Vec<Token>),
+    NotReferenced(Vec<Token>),
+    Const(Expression),
+    P02,
+    P4510,
+    P816,
+    PC02,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum LineKind {
     ConstantAssign(ConstantAssign),
     Include(Token),
@@ -150,7 +166,7 @@ pub enum LineKind {
     MacroDefinition(Token, Vec<Token>, Vec<Line>),
     Data(Vec<Expression>),
     Org(String),
-    If(Expression),
+    If(IfKind),
 
     Misc,
     MiscWithParams(Vec<Expression>),
