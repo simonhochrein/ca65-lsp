@@ -150,6 +150,10 @@ pub enum LineKind {
     MacroDefinition(Token, Vec<Token>, Vec<Line>),
     Data(Vec<Expression>),
     Org(String),
+    If(Expression),
+
+    Misc,
+    MiscWithParams(Vec<Expression>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -212,7 +216,7 @@ impl<'a> Parser<'a> {
 
             return operation;
         }
-        
+
         Err(ParseError::UnexpectedToken(self.tokens.peek().unwrap()))
     }
 
@@ -277,8 +281,8 @@ impl<'a> Parser<'a> {
                     let address = self.consume_token(TokenType::Number)?;
                     let end = self.mark_end();
                     self.consume_newline()?;
-                    
-                    Ok(Some(Line{
+
+                    Ok(Some(Line {
                         kind: LineKind::Org(address.lexeme.clone()),
                         span: Span::new(start, end),
                     }))
@@ -301,7 +305,7 @@ impl<'a> Parser<'a> {
                         span: Span::new(start, end),
                     }))
                 }
-                ".macro"|".mac" => Ok(Some(self.parse_macro_def()?)),
+                ".macro" | ".mac" => Ok(Some(self.parse_macro_def()?)),
                 ".proc" => {
                     self.consume_token(TokenType::Identifier)?;
                     let ident = self.last();
@@ -379,7 +383,35 @@ impl<'a> Parser<'a> {
                         span: Span::new(start, end),
                     }))
                 }
-                ".db"|".dw"|".byte"|".word" => {
+                ".code" => {
+                    let end = self.mark_end();
+                    self.consume_newline()?;
+
+                    Ok(Some(Line {
+                        kind: LineKind::Segment("code".to_string()),
+                        span: Span::new(start, end),
+                    }))
+                }
+                ".forceimport" => {
+                    let parameters = self.parse_parameters()?;
+                    let end = self.mark_end();
+                    self.consume_newline()?;
+
+                    Ok(Some(Line {
+                        kind: LineKind::MiscWithParams(parameters),
+                        span: Span::new(start, end),
+                    }))
+                }
+                ".reloc" => {
+                    let end = self.mark_end();
+                    self.consume_newline()?;
+
+                    Ok(Some(Line {
+                        kind: LineKind::Misc,
+                        span: Span::new(start, end),
+                    }))
+                }
+                ".db" | ".dw" | ".byte" | ".word" => {
                     let parameters = self.parse_parameters()?;
                     let end = self.mark_end();
                     self.consume_newline()?;
@@ -394,12 +426,31 @@ impl<'a> Parser<'a> {
                 ".index" | ".mem" => {
                     self.parse_parameters()?;
                     Ok(None)
-                }, 
+                }
                 _ => Err(ParseError::UnexpectedToken(mac)),
             };
         }
 
         Ok(Some(self.parse_assignment()?))
+    }
+
+    fn parse_if(&mut self) -> Result<Line> {
+        let start = self.mark_start();
+        let condition = self.parse_expression()?;
+        let end = self.mark_end();
+        self.consume_newline()?;
+
+        while !self.tokens.at_end() {
+            return Ok(Line {
+                kind: LineKind::If(condition),
+                span: Span::new(start, end),
+            });
+        }
+
+        Err(ParseError::Expected {
+            received: self.peek()?,
+            expected: TokenType::Macro,
+        })
     }
 
     fn parse_macro_def(&mut self) -> Result<Line> {
@@ -408,7 +459,7 @@ impl<'a> Parser<'a> {
         let ident = self.last();
         let mut parameters = vec![];
 
-        if !check_token!(self.tokens, TokenType::EOL|TokenType::EOF) {
+        if !check_token!(self.tokens, TokenType::EOL | TokenType::EOF) {
             parameters.push(self.consume_token(TokenType::Identifier)?);
             while !self.tokens.at_end() && match_token!(self.tokens, TokenType::Comma) {
                 parameters.push(self.consume_token(TokenType::Identifier)?);
